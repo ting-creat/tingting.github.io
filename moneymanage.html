@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>个人财务管理计算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        body {
+            background-color: #f9f5e6;
+            padding: 15px;
+            color: #333;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            padding: 20px 15px;
+        }
+        h1 {
+            color: #e67e22;
+            font-size: 22px;
+            margin-bottom: 25px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f3e5ab;
+        }
+        h2 {
+            color: #e67e22;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        h2::before {
+            content: "•";
+            margin-right: 8px;
+            font-size: 20px;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #f3e5ab;
+            border-radius: 8px;
+            background: #fff8e1;
+        }
+        .dynamic-item, .fault-item, .self-invest-item {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            background: #fdf9e8;
+        }
+        .item-content, .fault-content, .self-invest-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .item-name, .self-invest-name {
+            flex: 1 1 100%;
+            padding: 10px;
+            font-size: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        .item-amount, .item-period, .item-term, .fault-amount, .fault-period, .fault-term, .self-invest-amount {
+            flex: 1 1 calc(30% - 10px);
+            min-width: 100px;
+            padding: 10px;
+            font-size: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        .del-btn {
+            width: 40px;
+            height: 40px;
+            flex: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .tip {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 12px;
+            background: #ffeeba;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+        .total {
+            margin-top: 30px;
+            padding: 15px;
+            background: #d4edda;
+            border-radius: 8px;
+            border: 1px solid #c3e6cb;
+        }
+        .total h2 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .total p {
+            font-size: 16px;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .add-btn, .calc-btn {
+            width: 100%;
+            padding: 14px;
+            margin-top: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .add-btn {
+            background: #3498db;
+            color: #fff;
+        }
+        .add-btn:hover {
+            background: #2980b9;
+        }
+        .calc-btn {
+            background: #e67e22;
+            color: #fff;
+            margin-top: 20px;
+            font-weight: 600;
+        }
+        .calc-btn:hover {
+            background: #d35400;
+        }
+        /* 底部广告位样式 */
+        .bottom-ad {
+            width: 100%;
+            max-width: 600px;
+            margin: 30px auto 15px;
+            padding: 15px;
+            border: 1px dashed #ddd;
+            border-radius: 8px;
+            background: #fff;
+            text-align: center;
+        }
+        .ad-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .ad-container {
+            width: 100%;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #f3e5ab;
+            border-radius: 6px;
+            background: #fff8e1;
+            font-size: 13px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>个人财务管理计算器</h1>
+        
+        <!-- 每月收入板块 -->
+        <div class="section">
+            <h2>每月收入</h2>
+            <button class="add-btn" onclick="addItem('incomeContainer')">添加收入项目</button>
+            <div id="incomeContainer" class="dynamic-container">
+                <div class="dynamic-item">
+                    <div class="item-content">
+                        <input type="text" placeholder="项目名称（如：工资、兼职收入）" value="工资收入" class="item-name" oninput="calculate()">
+                        <input type="number" placeholder="每月金额" value="5800" min="0" class="item-amount" oninput="calculate()">
+                        <select class="item-period" onchange="toggleTerm(this)" oninput="calculate()">
+                            <option value="month" selected>按月</option>
+                            <option value="year">按年</option>
+                        </select>
+                        <input type="number" placeholder="执行月数（1-12）" value="12" min="1" max="12" class="item-term" oninput="calculate()">
+                        <button class="del-btn" onclick="removeItem(this, 'incomeContainer')">×</button>
+                    </div>
+                    <div class="tip">按月：填每月金额+执行月数；按年：填全年总金额，无需选月数</div>
+                </div>
+                <div class="dynamic-item">
+                    <div class="item-content">
+                        <input type="text" placeholder="项目名称（如：工资、兼职收入）" value="兼职收入" class="item-name" oninput="calculate()">
+                        <input type="number" placeholder="每月金额" value="1000" min="0" class="item-amount" oninput="calculate()">
+                        <select class="item-period" onchange="toggleTerm(this)" oninput="calculate()">
+                            <option value="month" selected>按月</option>
+                            <option value="year">按年</option>
+                        </select>
+                        <input type="number" placeholder="执行月数（1-12）" value="10" min="1" max="12" class="item-term" oninput="calculate()">
+                        <button class="del-btn" onclick="removeItem(this, 'incomeContainer')">×</button>
+                    </div>
+                    <div class="tip">按月：填每月金额+执行月数；按年：填全年总金额，无需选月数</div>
+                </div>
+            </div>
+            <div class="result">
+                年度收入总计：<span id="incomeYear">79600.00</span> 元/年<br>
+                月均收入：<span id="incomeMonth">6633.33</span> 元/月
+            </div>
+        </div>
+
+        <!-- 储蓄部分 -->
+        <div class="section">
+            <h2>储蓄部分</h2>
+            <button class="add-btn" onclick="addItem('savingsContainer')">添加储蓄项目</button>
+            <div id="savingsContainer" class="dynamic-container">
+                <div class="dynamic-item">
+                    <div class="item-content">
+                        <input type="text" placeholder="项目名称（如：每月固定储蓄）" value="每月固定储蓄" class="item-name" oninput="calculate()">
+                        <input type="number" placeholder="每月金额" value="3333" min="0" class="item-amount" oninput="calculate()">
+                        <select class="item-period" onchange="toggleTerm(this)" oninput="calculate()">
+                            <option value="month" selected>按月</option>
+                            <option value="year">按年</option>
+                        </select>
+                        <input type="number" placeholder="执行月数（1-12）" value="12" min="1" max="12" class="item-term" oninput="calculate()">
+                        <button class="del-btn" onclick="removeItem(this, 'savingsContainer')">×</button>
+                    </div>
+                    <div class="tip">按月：填每月金额+执行月数；按年：填全年总金额，无需选月数</div>
+                </div>
+            </div>
+            <div class="result">
+                年度储蓄总计：<span id="savingsYear">39996.00</span> 元/年<br>
+                月均储蓄：<span id="savingsMonth">3333.00</span> 元/月
+            </div>
+        </div>
+
+        <!-- 固定支出部分 -->
+        <div class="section">
+            <h2>固定支出部分</h2>
+            <button class="add-btn" onclick="addItem('expenseContainer')">添加支出项目</button>
+            <div id="expenseContainer" class="dynamic-container">
+                <div class="dynamic-item">
+                    <div class="item-content">
+                        <input type="text" placeholder="项目名称" value="贷款还款" class="item-name" oninput="calculate()">
+                        <input type="number" placeholder="每月金额" value="79.76" min="0" class="item-amount" oninput="calculate()">
+                        <select class="item-period" onchange="toggleTerm(this)" oninput="calculate()">
+                            <option value="month" selected>按月</option>
+                            <option value="year">按年</option>
+                        </select>
+                        <input type="number" placeholder="执行月数（1-12）" value="3" min="1" max="12" class="item-term" oninput="calculate()">
+                        <button class="del-btn" onclick="removeItem(this, 'expenseContainer')">×</button>
+                    </div>
+                    <div class="tip">按月：填每月金额+执行月数；按年：填全年总金额，无需选月数</div>
+                </div>
+                <div class="dynamic-item">
+                    <div class="item-content">
+                        <input type="text" placeholder="项目名称" value="年度保险" class="item-name" oninput="calculate()">
+                        <input type="number" placeholder="全年金额" value="2000" min="0" class="item-amount" oninput="calculate()">
+                        <select class="item-period" onchange="toggleTerm(this)" oninput="calculate()">
+                            <option value="month">按月</option>
+                            <option value="year" selected>按年</option>
+                        </select>
+                        <input type="number" placeholder="执行月数（1-12）" value="12" min="1" max="12" class="item-term" style="display:none" oninput="calculate()">
+                        <button class="del-btn" onclick="removeItem(this, 'expenseContainer')">×</button>
+                    </div>
+                    <div class="tip">按月：填每月金额+执行月数；按年：填全年总金额，无需选月数</div>
+                </div>
+            </div>
+            <div class="result">
+                年度支出总计：<span id="expenseYear">2239.28</span> 元/年<br>
+                月均支出：<span id="expenseMonth">186.61</span> 元/月
+            </div>
+        </div>
+
+        <!-- 容错盒子 -->
+        <div class="section">
+            <h2>容错盒子</h2>
+            <div class="fault-item">
+                <div class="fault-content">
+                    <input type="text" placeholder="项目名称（如：容错备用金）" value="容错备用金" class="item-name" oninput="calculate()">
+                    <input type="number" placeholder="每月金额" value="167" min="0" class="fault-amount" oninput="calculate()">
+                    <select class="fault-period" onchange="toggleTerm(this)" oninput="calculate()">
+                        <option value="month" selected>按月</option>
+                        <option value="year">按年</option>
+                    </select>
+                    <input type="number" placeholder="执行月数（1-12）" value="12" min="1" max="12" class="fault-term" oninput="calculate()">
+                </div>
+                <div class="tip">按月：填每月金额+执行月数；按年：填全年总金额，无需选月数</div>
+            </div>
+            <div class="result">
+                年度容错总计：<span id="faultYear">2004.00</span> 元/年<br>
+                月均容错：<span id="faultMonth">167.00</span> 元/月
+            </div>
+        </div>
+
+        <!-- 自我投资部分（固定按月，去掉周期和执行月数） -->
+        <div class="section">
+            <h2>自我投资部分</h2>
+            <button class="add-btn" onclick="addSelfInvestItem()">添加投资项目</button>
+            <div id="selfInvestContainer" class="dynamic-container">
+                <div class="self-invest-item">
+                    <div class="self-invest-content">
+                        <input type="text" placeholder="项目名称（如：学习基金、健身会员）" value="学习基金" class="self-invest-name" oninput="calculate()">
+                        <input type="number" placeholder="每月投资金额" value="200" min="0" class="self-invest-amount" oninput="calculate()">
+                        <button class="del-btn" onclick="removeSelfInvestItem(this)">×</button>
+                    </div>
+                    <div class="tip">固定每月投资，直接填写每月金额即可</div>
+                </div>
+            </div>
+            <div class="result">
+                月均总投资：<span id="monthlySelfInvestTotal">200.00</span> 元/月<br>
+                年度总投资：<span id="annualSelfInvestTotal">2400.00</span> 元/年
+            </div>
+        </div>
+
+        <!-- 自由支配部分（计算逻辑同步更新） -->
+        <div class="section">
+            <h2>剩余自由支配</h2>
+            <div class="result">
+                月均剩余自由支配：<span id="freeMonth">2746.72</span> 元/月<br>
+                年度剩余自由支配：<span id="freeYear">32960.64</span> 元/年<br>
+                每周剩余可支配：<span id="freeWeek">392.39</span> 元/周
+            </div>
+        </div>
+
+        <!-- 计算按钮 -->
+        <button class="calc-btn" onclick="calculate()">重新计算</button>
+
+        <!-- 年度财务总结（大幅精简，只保留核心数据） -->
+        <div class="total">
+            <h2>年度财务总结</h2>
+            <p>年度收入总额：<span id="totalIncome">79600.00</span> 元</p>
+            <p>年度总支出/储蓄/投资：<span id="totalOutlay">46639.28</span> 元</p>
+            <p>年度剩余自由支配：<span id="finalFree">32960.72</span> 元</p>
+            <p>——————————————</p>
+            <p>月均收入：<span id="avgIncomeMonth">6633.33</span> 元</p>
+            <p>月均总支出/储蓄/投资：<span id="avgOutlayMonth">3886.61</span> 元</p>
+            <p>月均剩余自由支配：<span id="avgFreeMonth">2746.72</span> 元</p>
+        </div>
+    </div>
+
+    <!-- 底部广告位 -->
+    <div class="bottom-ad">
+        <div class="ad-title">广告位</div>
+        <div class="ad-container" id="ad-bottom">
+            后续（）至此
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            document.querySelectorAll('.item-period, .fault-period').forEach(period => {
+                toggleTerm(period);
+            });
+            calculate();
+        };
+
+        // 添加收入/储蓄/支出项目
+        function addItem(containerId) {
+            const container = document.getElementById(containerId);
+            const newItem = document.createElement('div');
+            newItem.className = 'dynamic-item';
+            let defaultName = '';
+            if (containerId === 'incomeContainer') defaultName = '其他收入（如理财）';
+            else if (containerId === 'savingsContainer') defaultName = '新增储蓄项目';
+            else if (containerId === 'expenseContainer') defaultName = '新增支出项目';
+
+            newItem.innerHTML = `
+                <div class="item-content">
+                    <input type="text" placeholder="项目名称" value="${defaultName}" class="item-name" oninput="calculate()">
+                    <input type="number" placeholder="金额" min="0" class="item-amount" oninput="calculate()">
+                    <select class="item-period" onchange="toggleTerm(this)" oninput="calculate()">
+                        <option value="month" selected>按月</option>
+                        <option value="year">按年</option>
+                    </select>
+                    <input type="number" placeholder="执行月数（1-12）" value="12" min="1" max="12" class="item-term" oninput="calculate()">
+                    <button class="del-btn" onclick="removeItem(this, '${containerId}')">×</button>
+                </div>
+                <div class="tip">按月：填每月金额+执行月数；按年：填全年总金额，无需选月数</div>
+            `;
+            container.appendChild(newItem);
+            calculate();
+        }
+
+        // 删除收入/储蓄/支出项目
+        function removeItem(btn, containerId) {
+            const container = document.getElementById(containerId);
+            if (container.children.length > 1) {
+                container.removeChild(btn.parentElement.parentElement);
+                calculate();
+            } else {
+                alert('至少保留1个项目哦~');
+            }
+        }
+
+        // 添加自我投资项目（固定按月）
+        function addSelfInvestItem() {
+            const container = document.getElementById('selfInvestContainer');
+            const newItem = document.createElement('div');
+            newItem.className = 'self-invest-item';
+            newItem.innerHTML = `
+                <div class="self-invest-content">
+                    <input type="text" placeholder="项目名称（如：学习基金、健身会员）" value="新增投资项目" class="self-invest-name" oninput="calculate()">
+                    <input type="number" placeholder="每月投资金额" min="0" class="self-invest-amount" oninput="calculate()">
+                    <button class="del-btn" onclick="removeSelfInvestItem(this)">×</button>
+                </div>
+                <div class="tip">固定每月投资，直接填写每月金额即可</div>
+            `;
+            container.appendChild(newItem);
+            calculate();
+        }
+
+        // 删除自我投资项目
+        function removeSelfInvestItem(btn) {
+            const container = document.getElementById('selfInvestContainer');
+            if (container.children.length > 1) {
+                container.removeChild(btn.parentElement.parentElement);
+                calculate();
+            } else {
+                alert('至少保留1个投资项目哦~');
+            }
+        }
+
+        // 切换周期时控制执行月数显示
+        function toggleTerm(periodSelect) {
+            const termInput = periodSelect.parentElement.querySelector('.item-term, .fault-term');
+            const amountInput = periodSelect.parentElement.querySelector('.item-amount, .fault-amount');
+            
+            if (periodSelect.value === 'month') {
+                termInput.style.display = 'block';
+                amountInput.placeholder = '每月金额';
+            } else {
+                termInput.style.display = 'none';
+                amountInput.placeholder = '全年金额';
+            }
+        }
+
+        // 核心计算逻辑（自我投资固定按月，确保计入扣除）
+        function calculate() {
+            // 1. 计算收入
+            let annualIncome = 0;
+            document.querySelectorAll('#incomeContainer .dynamic-item').forEach(item => {
+                const amount = parseFloat(item.querySelector('.item-amount').value) || 0;
+                const period = item.querySelector('.item-period').value;
+                const term = period === 'month' ? parseInt(item.querySelector('.item-term').value) || 1 : 1;
+                annualIncome += period === 'month' ? amount * term : amount;
+            });
+            const monthlyIncome = annualIncome / 12;
+
+            // 2. 计算储蓄
+            let annualSavings = 0;
+            document.querySelectorAll('#savingsContainer .dynamic-item').forEach(item => {
+                const amount = parseFloat(item.querySelector('.item-amount').value) || 0;
+                const period = item.querySelector('.item-period').value;
+                const term = period === 'month' ? parseInt(item.querySelector('.item-term').value) || 1 : 1;
+                annualSavings += period === 'month' ? amount * term : amount;
+            });
+            const monthlySavings = annualSavings / 12;
+
+            // 3. 计算固定支出
+            let annualExpense = 0;
+            document.querySelectorAll('#expenseContainer .dynamic-item').forEach(item => {
+                const amount = parseFloat(item.querySelector('.item-amount').value) || 0;
+                const period = item.querySelector('.item-period').value;
+                const term = period === 'month' ? parseInt(item.querySelector('.item-term').value) || 1 : 1;
+                annualExpense += period === 'month' ? amount * term : amount;
+            });
+            const monthlyExpense = annualExpense / 12;
+
+            // 4. 计算容错
+            let annualFault = 0;
+            const faultItem = document.querySelector('.fault-item');
+            const faultAmount = parseFloat(faultItem.querySelector('.fault-amount').value) || 0;
+            const faultPeriod = faultItem.querySelector('.fault-period').value;
+            const faultTerm = faultPeriod === 'month' ? parseInt(faultItem.querySelector('.fault-term').value) || 1 : 1;
+            annualFault += faultPeriod === 'month' ? faultAmount * faultTerm : faultAmount;
+            const monthlyFault = annualFault / 12;
+
+            // 5. 计算自我投资（固定按月，直接累加每月金额）
+            let monthlySelfInvest = 0;
+            document.querySelectorAll('#selfInvestContainer .self-invest-item').forEach(item => {
+                monthlySelfInvest += parseFloat(item.querySelector('.self-invest-amount').value) || 0;
+            });
+            const annualSelfInvest = monthlySelfInvest * 12;
+
+            // 6. 计算自由支配（核心公式：月均收入 - 各项月均扣除）
+            const monthlyFreeRemain = monthlyIncome - monthlySavings - monthlyExpense - monthlyFault - monthlySelfInvest;
+            const annualFreeRemain = monthlyFreeRemain * 12;
+            const weeklyFreeRemain = monthlyFreeRemain / 7;
+
+            // 7. 计算总支出/储蓄/投资（用于总结）
+            const annualTotalOutlay = annualSavings + annualExpense + annualFault + annualSelfInvest;
+            const monthlyTotalOutlay = monthlySavings + monthlyExpense + monthlyFault + monthlySelfInvest;
+
+            // 8. 更新所有显示
+            // 收入
+            document.getElementById('incomeYear').textContent = annualIncome.toFixed(2);
+            document.getElementById('incomeMonth').textContent = monthlyIncome.toFixed(2);
+            // 储蓄
+            document.getElementById('savingsYear').textContent = annualSavings.toFixed(2);
+            document.getElementById('savingsMonth').textContent = monthlySavings.toFixed(2);
+            // 支出
+            document.getElementById('expenseYear').textContent = annualExpense.toFixed(2);
+            document.getElementById('expenseMonth').textContent = monthlyExpense.toFixed(2);
+            // 容错
+            document.getElementById('faultYear').textContent = annualFault.toFixed(2);
+            document.getElementById('faultMonth').textContent = monthlyFault.toFixed(2);
+            // 自我投资
+            document.getElementById('monthlySelfInvestTotal').textContent = monthlySelfInvest.toFixed(2);
+            document.getElementById('annualSelfInvestTotal').textContent = annualSelfInvest.toFixed(2);
+            // 自由支配
+            document.getElementById('freeMonth').textContent = monthlyFreeRemain.toFixed(2);
+            document.getElementById('freeYear').textContent = annualFreeRemain.toFixed(2);
+            document.getElementById('freeWeek').textContent = weeklyFreeRemain.toFixed(2);
+            // 总结
+            document.getElementById('totalIncome').textContent = annualIncome.toFixed(2);
+            document.getElementById('totalOutlay').textContent = annualTotalOutlay.toFixed(2);
+            document.getElementById('finalFree').textContent = (annualIncome - annualTotalOutlay).toFixed(2);
+            document.getElementById('avgIncomeMonth').textContent = monthlyIncome.toFixed(2);
+            document.getElementById('avgOutlayMonth').textContent = monthlyTotalOutlay.toFixed(2);
+            document.getElementById('avgFreeMonth').textContent = monthlyFreeRemain.toFixed(2);
+        }
+    </script>
+</body>
+</html>
